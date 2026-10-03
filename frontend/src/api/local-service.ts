@@ -89,6 +89,7 @@ export function loadOverview(): OverviewResult {
   const modules = [...MODULE_BY_KEY.values()].map((meta) => {
     const entries = rows[meta.key] ?? []
     return {
+      key: meta.key,
       name: meta.name,
       created: entries.length,
       pending: entries.filter((row) => row.pending).length,
