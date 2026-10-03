@@ -61,11 +61,36 @@ npm run build
 | 巡检记录 | `inspection` | 巡检记录 | 记录编号、站点编号、巡检日期 |
 | 测报方案 | `plan` | 测报方案 | 方案编号、方案名称、适用范围 |
 
+## 运营概览的本地运行检查
+
+打开「运营概览」时会自动执行一次**本地运行检查**，按顺序跑三步，任一步失败即停在该步，
+修复后点步骤旁的「重试」继续：
+
+1. **核对数据版本**：首次运行自动播种示例数据；检测到旧版本本地数据时停下，点重试做
+   **加法迁移**——已有业务数据原样保留，只补齐缺失模块。
+2. **核对页面入口**：逐个业务模块核对侧边栏入口与路由是否都已登记，缺失就停在该模块。
+3. **核对各模块台账**：台账缺失/损坏即停；首次校验必须与示例数据基准逐项一致（18 个模块、
+   登记总量 54、待处理 36、异常 18），保证台账量、待处理量、异常量稳定复现；之后以最近一次
+   校验快照为基准，正常业务流转只提示漂移、不阻断使用。
+
+约定与持久化：
+
+- 业务数据键 `hydrology-monitor-station:entries`；版本键
+  `hydrology-monitor-station:meta`；校验快照键
+  `hydrology-monitor-station:check-snapshots`（只追加，旧快照永远不会被示例数据覆盖）。
+- 检查通过后会在**站房维护台账**里幂等登记一条 `维护类型=启动校验` 的记录（记录编号
+  `CHK-YYYYMMDD`，同一天更新原记录），连续执行多次不会产生重复事项；从侧边栏
+  「站房维护」入口即可查看每次启动校验的结果。
+- 检查只读业务台账、不改动原有事项；巡检待办、站房维护等页面在检查后照常使用。
+- 已有业务数据时默认选择「保留 + 加法迁移」，不存在重置或覆盖入口。
+
 ## 约定
 
 - 每个模块的页面在 `frontend/src/views/<模块>/index.vue`，页面只负责渲染，读写统一走
-  `frontend/src/api/local-service.ts`。
+  `frontend/src/api/local-service.ts`；本地运行检查逻辑在 `frontend/src/api/startup-check.ts`。
 - 字段、状态、动作与流转目标集中在 `frontend/src/data/modules.ts`；示例数据在
-  `frontend/src/data/seed.ts`。
+  `frontend/src/data/seed.ts`；侧边栏入口统一登记在 `frontend/src/data/nav.ts`。
 - 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
-- 想回到初始数据：清掉浏览器里 `hydrology-monitor-station:entries` 这一项，或调用 `resetModule(模块)`。
+- 想回到初始数据：清掉浏览器里 `hydrology-monitor-station:entries`、
+  `hydrology-monitor-station:meta`、`hydrology-monitor-station:check-snapshots` 三项，
+  或调用 `resetModule(模块)`。
